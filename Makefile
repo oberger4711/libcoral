@@ -56,12 +56,14 @@ done; \
 popd
 endef
 
-EXAMPLES_OUT_DIR   := $(MAKEFILE_DIR)/out/$(CPU)/examples
-TOOLS_OUT_DIR      := $(MAKEFILE_DIR)/out/$(CPU)/tools
-TESTS_OUT_DIR      := $(MAKEFILE_DIR)/out/$(CPU)/tests
-BENCHMARKS_OUT_DIR := $(MAKEFILE_DIR)/out/$(CPU)/benchmarks
+EXAMPLES_OUT_DIR       := $(MAKEFILE_DIR)/out/$(CPU)/examples
+TOOLS_OUT_DIR          := $(MAKEFILE_DIR)/out/$(CPU)/tools
+TESTS_OUT_DIR          := $(MAKEFILE_DIR)/out/$(CPU)/tests
+CORAL_DETECTOR_OUT_DIR := $(MAKEFILE_DIR)/out/$(CPU)/coraldetector
+BENCHMARKS_OUT_DIR     := $(MAKEFILE_DIR)/out/$(CPU)/benchmarks
 
 .PHONY: all \
+				coraldetector \
         tests \
         benchmarks \
         tools \
@@ -69,11 +71,16 @@ BENCHMARKS_OUT_DIR := $(MAKEFILE_DIR)/out/$(CPU)/benchmarks
         clean \
         help
 
-all: tests benchmarks tools examples
+all: coraldetector tests benchmarks tools examples
+
+coraldetector:
+	bazel build $(BAZEL_BUILD_FLAGS) $(shell bazel query 'kind(cc_.*binary, //coral/...)' | grep coraldetector)
+	cp -f bazel-bin/coral/coraldetector/libcoraldetector.so $(CORAL_DETECTOR_OUT_DIR)
+	$(call copy_out_files,"*",$(CORAL_DETECTOR_OUT_DIR))
 
 tests:
 	bazel build $(BAZEL_BUILD_FLAGS) $(shell bazel query 'kind(cc_.*test, //coral/...)' | $(TEST_FILTER))
-	$(call copy_out_files,"*_test",$(TESTS_OUT_DIR))
+	$(call copy_out_files,"*",$(TESTS_OUT_DIR))
 
 benchmarks:
 	bazel build $(BAZEL_BUILD_FLAGS) $(shell bazel query 'kind(cc_binary, //coral/...)' | grep benchmark)
